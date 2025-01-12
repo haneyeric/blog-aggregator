@@ -1,10 +1,14 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 
 	"github.com/haneyeric/blog-aggregator/internal/config"
+	"github.com/haneyeric/blog-aggregator/internal/database"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -13,12 +17,28 @@ func main() {
 		fmt.Printf("Error getting config: %s", err)
 		return
 	}
-	s := &state{cfg: &cf}
+
+	db, err := sql.Open("postgres", cf.DbUrl)
+	if err != nil {
+		fmt.Printf("Error opening db: %s\n", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+	if err := db.Ping(); err != nil {
+		fmt.Printf("Error connecting to db: %s\n", err)
+		os.Exit(1)
+	}
+
+	dbQueries := database.New(db)
+
+	s := &state{cfg: &cf, db: dbQueries}
+
 	commands := commands{
 		cmds: make(map[string]func(*state, command) error),
 	}
 
 	commands.register("login", handlerLogin)
+	commands.register("register", handlerRegister)
 
 	args := os.Args
 
