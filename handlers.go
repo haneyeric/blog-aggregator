@@ -100,3 +100,46 @@ func handlerAgg(_ *state, _ command) error {
 	return nil
 }
 
+func handlerAddFeed(s *state, cmd command) error {
+	if len(cmd.args) < 2 {
+		return errors.New("missing arguments")
+	}
+	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+	if err != nil {
+		fmt.Printf("Error fetching user id: %s\n", err)
+		os.Exit(1)
+	}
+
+	name := cmd.args[0]
+	url := cmd.args[1]
+
+	params := database.CreateFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+		Name:      name,
+		UserID:    user.ID,
+		Url:       url,
+	}
+	feed, err := s.db.CreateFeed(context.Background(), params)
+	if err != nil {
+		fmt.Printf("Error creating feed: %s\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println(feed)
+	os.Exit(0)
+	return nil
+}
+
+func handlerFeeds(s *state, _ command) error {
+	feeds, err := s.db.GetFeeds(context.Background())
+	if err != nil {
+		fmt.Printf("Error getting feeds: %s\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println(feeds)
+	os.Exit(0)
+	return nil
+}
